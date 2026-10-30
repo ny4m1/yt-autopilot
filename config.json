@@ -1,0 +1,21 @@
+{
+  "niche": "mind-blowing science and space facts",
+  "audience": "curious general viewers aged 16-45",
+  "language": "en",
+  "format": "shorts",
+  "target_seconds": 45,
+  "voice": "en-US-AndrewMultilingualNeural",
+  "voice_rate": "+5%",
+  "gemini_models": ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+  "pexels_orientation": "portrait",
+  "resolutions": {
+    "shorts": [1080, 1920],
+    "long": [1920, 1080]
+  },
+  "fps": 30,
+  "subtitle_font": "DejaVu Sans",
+  "subtitle_size": 84,
+  "background_music_dir": "assets/music",
+  "music_volume": 0.08,
+  "avoid_repeating_last_n": 40
+}
