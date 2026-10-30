@@ -1,4 +1,4 @@
-"""Fetch free stock footage from Pexels (free API key). Falls back to a generated background."""
+"""Fetch free stock footage from Pexels and/or Pixabay (free API keys). Falls back to a generated background."""
 import os
 import random
 import subprocess
@@ -7,6 +7,7 @@ from pathlib import Path
 import requests
 
 PEXELS = "https://api.pexels.com/videos/search"
+PIXABAY = "https://pixabay.com/api/videos/"
 
 
 def _search(query: str, orientation: str, min_seconds: float, used: set) -> str | None:
@@ -32,6 +33,45 @@ def _search(query: str, orientation: str, min_seconds: float, used: set) -> str 
     # pick the file closest to 1080 on the long side without being huge
     files.sort(key=lambda f: abs(max(f.get("width", 0), f.get("height", 0)) - 1920))
     return files[0]["link"] if files else None
+
+
+def _search_pixabay(query: str, orientation: str, min_seconds: float, used: set) -> str | None:
+    key = os.environ.get("PIXABAY_API_KEY")
+    if not key:
+        return None
+    r = requests.get(
+        PIXABAY,
+        params={"key": key, "q": query, "per_page": 20, "safesearch": "true"},
+        timeout=30,
+    )
+    if r.status_code != 200:
+        return None
+    hits = [h for h in r.json().get("hits", []) if ("pb", h["id"]) not in used]
+    if orientation == "portrait":  # prefer tall clips, but landscape is fine (center-cropped)
+        tall = [h for h in hits if h["videos"].get("medium", {}).get("height", 0)
+                > h["videos"].get("medium", {}).get("width", 0)]
+        hits = tall or hits
+    hits = [h for h in hits if h.get("duration", 0) >= min_seconds] or hits
+    if not hits:
+        return None
+    hit = random.choice(hits[:6])
+    used.add(("pb", hit["id"]))
+    for size in ("large", "medium", "small"):
+        url = hit["videos"].get(size, {}).get("url")
+        if url:
+            return url
+    return None
+
+
+def _find_clip(query: str, cfg: dict, min_seconds: float, used: set) -> str | None:
+    for search in (_search, _search_pixabay):
+        try:
+            url = search(query, cfg["pexels_orientation"], min_seconds, used)
+        except requests.RequestException:
+            url = None
+        if url:
+            return url
+    return None
 
 
 def _download(url: str, out: Path):
@@ -63,10 +103,7 @@ def fetch_all(scenes: list[dict], cfg: dict, workdir: Path) -> None:
         out = workdir / f"clip_{i:02d}.mp4"
         url = None
         for query in (scene["search_query"], " ".join(scene["search_query"].split()[:2])):
-            try:
-                url = _search(query, cfg["pexels_orientation"], scene["duration"], used)
-            except requests.RequestException:
-                url = None
+            url = _find_clip(query, cfg, scene["duration"], used)
             if url:
                 break
         try:

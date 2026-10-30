@@ -12,13 +12,14 @@ All parts are free: Gemini free tier, Pexels free API, edge-tts needs no key, Gi
 ## 1. Get the two free API keys
 
 1. **Gemini**: https://aistudio.google.com/apikey -> Create API key.
-2. **Pexels**: https://www.pexels.com/api/ -> sign up -> your key is shown on the API page.
-   (Optional. Without it you get plain animated backgrounds instead of stock footage.)
+2. **Stock footage** (optional, either one or both; without any you get plain animated backgrounds):
+   - **Pixabay**: sign up at https://pixabay.com, then open https://pixabay.com/api/docs/ while logged in; your key is shown there. Secret name: `PIXABAY_API_KEY`.
+   - **Pexels**: https://www.pexels.com/api/ (new key requests are sometimes paused). Secret name: `PEXELS_API_KEY`.
 
 ## 2. Run it automatically on GitHub
 
 1. Repo -> **Settings -> Secrets and variables -> Actions -> New repository secret**.
-   Add `GEMINI_API_KEY` and `PEXELS_API_KEY`.
+   Add `GEMINI_API_KEY` and, for footage, `PIXABAY_API_KEY` and/or `PEXELS_API_KEY`.
 2. Repo -> **Actions** tab -> *Make video* -> **Run workflow** (test run).
 3. When it finishes, open the run and download the **videos-N** artifact. Inside each folder:
    - `video.mp4`: upload this to YouTube
@@ -33,7 +34,7 @@ All parts are free: Gemini free tier, Pexels free API, edge-tts needs no key, Gi
 # needs Python 3.10+ and ffmpeg installed
 pip install -r requirements.txt
 export GEMINI_API_KEY=...      # Windows PowerShell: $env:GEMINI_API_KEY="..."
-export PEXELS_API_KEY=...
+export PIXABAY_API_KEY=...   # and/or PEXELS_API_KEY
 python main.py            # one video
 python main.py --count 3  # three videos
 python main.py --demo     # sample script, no Gemini key needed
@@ -57,6 +58,6 @@ Edit `config.json`:
   templated, repetitive AI videos can be refused or demonetised. Add real value: a distinct
   niche, good scripts, varied visuals, and review each video before uploading.
 - Check every fact the script states. Gemini can be wrong.
-- Pexels footage is free to use, but read their licence at https://www.pexels.com/license/.
+- Pexels and Pixabay footage is free to use, but read their licences (pexels.com/license, pixabay.com/service/license-summary/).
 - Only use music you have the rights to.
 - In the YouTube upload form, tick the option disclosing realistic AI-generated or synthetic content when it applies.
