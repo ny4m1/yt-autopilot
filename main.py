@@ -4,6 +4,7 @@ Usage:
     python main.py            # full run (needs GEMINI_API_KEY, optional PEXELS_API_KEY)
     python main.py --demo     # built-in sample script, no Gemini key needed (still needs internet for voice)
     python main.py --count 3  # make several videos in a row
+    python main.py --upload   # also upload to YouTube (needs the YT_* secrets)
 """
 import argparse
 import datetime as dt
@@ -12,7 +13,7 @@ import re
 import shutil
 from pathlib import Path
 
-from src import assemble, script, visuals, voice
+from src import assemble, script, upload, visuals, voice
 
 ROOT = Path(__file__).parent
 HISTORY = ROOT / "history.json"
@@ -40,7 +41,7 @@ def load_history() -> list[str]:
     return json.loads(HISTORY.read_text()) if HISTORY.exists() else []
 
 
-def make_one(cfg: dict, demo: bool) -> Path:
+def make_one(cfg: dict, demo: bool, do_upload: bool = False) -> Path:
     history = load_history()
     data = DEMO if demo else script.generate(cfg, history)
     stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -67,6 +68,17 @@ def make_one(cfg: dict, demo: bool) -> Path:
         f"TITLE:\n{meta['title']}\n\nDESCRIPTION:\n{meta['description']}\n\nTAGS:\n{', '.join(meta['tags'])}\n"
     )
 
+    if do_upload and not demo:
+        if upload.configured():
+            try:
+                vid = upload.upload(out_dir / "video.mp4", meta, cfg)
+                print(f"Uploaded to YouTube: https://www.youtube.com/watch?v={vid}")
+                (out_dir / "youtube_url.txt").write_text(f"https://www.youtube.com/watch?v={vid}\n")
+            except Exception as e:  # noqa: BLE001 - keep the video even if upload fails
+                print(f"WARNING: upload failed, video is still saved as a download: {e}")
+        else:
+            print("Upload skipped: YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN not set.")
+
     if not demo:
         HISTORY.write_text(json.dumps(history + [data["topic"]], indent=2))
     shutil.rmtree(work, ignore_errors=True)
@@ -78,11 +90,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--demo", action="store_true", help="use built-in sample script")
     ap.add_argument("--count", type=int, default=1)
+    ap.add_argument("--upload", action="store_true", help="upload to YouTube after making the video")
     ap.add_argument("--config", default=str(ROOT / "config.json"))
     args = ap.parse_args()
     cfg = json.loads(Path(args.config).read_text())
     for _ in range(args.count):
-        make_one(cfg, args.demo)
+        make_one(cfg, args.demo, args.upload)
 
 
 if __name__ == "__main__":

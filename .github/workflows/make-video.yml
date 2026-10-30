@@ -35,7 +35,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
-        run: python main.py --count "${{ github.event.inputs.count || '1' }}"
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: python main.py --upload --count "${{ github.event.inputs.count || '1' }}"
 
       - name: Upload videos (download from the run page)
         uses: actions/upload-artifact@v4

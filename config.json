@@ -27,5 +27,7 @@
   "subtitle_size": 84,
   "background_music_dir": "assets/music",
   "music_volume": 0.08,
-  "avoid_repeating_last_n": 40
+  "avoid_repeating_last_n": 40,
+  "youtube_privacy": "private",
+  "youtube_category_id": "28"
 }

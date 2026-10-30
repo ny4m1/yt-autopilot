@@ -28,6 +28,14 @@ All parts are free: Gemini free tier, Pexels free API, edge-tts needs no key, Gi
 4. It then runs every day by itself (edit the `cron` line in `.github/workflows/make-video.yml`).
    Artifacts are kept 14 days, so download them within that time.
 
+## 2b. Optional: auto-upload to YouTube
+
+Add three more secrets: `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` (Google Cloud project with the
+YouTube Data API enabled and an OAuth client; the refresh token comes from the OAuth Playground with the
+`youtube.upload` scope). Each run then uploads the video itself. Until your Google project passes YouTube's
+API audit, uploads are forced to **private**, so switch them to Public in YouTube Studio.
+Set `youtube_privacy` in `config.json` (`private`, `unlisted` or `public`; public only works after the audit).
+
 ## 3. Or run it on your computer
 
 ```bash
