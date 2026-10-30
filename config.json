@@ -6,11 +6,21 @@
   "target_seconds": 45,
   "voice": "en-US-AndrewMultilingualNeural",
   "voice_rate": "+5%",
-  "gemini_models": ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+  "gemini_models": [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash"
+  ],
   "pexels_orientation": "portrait",
   "resolutions": {
-    "shorts": [1080, 1920],
-    "long": [1920, 1080]
+    "shorts": [
+      1080,
+      1920
+    ],
+    "long": [
+      1920,
+      1080
+    ]
   },
   "fps": 30,
   "subtitle_font": "DejaVu Sans",

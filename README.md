@@ -49,7 +49,7 @@ Edit `config.json`:
 | `niche`, `audience` | What the channel is about. Change this first. |
 | `format` | `shorts` (1080x1920) or `long` (1920x1080; also set `pexels_orientation` to `landscape` and raise `target_seconds`) |
 | `voice` | Any edge-tts voice. List them with `edge-tts --list-voices` |
-| `gemini_models` | Tried in order. If a model name stops working, update it from https://ai.google.dev/gemini-api/docs/models |
+| `gemini_models` | Preferred models, tried first. The script also asks Google which models your key can use and falls back to them automatically |
 | `background_music_dir` | Drop royalty-free `.mp3` files in `assets/music/` and they are mixed in quietly |
 
 ## Things to know before monetising

@@ -6,7 +6,8 @@ import time
 
 import requests
 
-API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+BASE = "https://generativelanguage.googleapis.com/v1beta"
+API = BASE + "/models/{model}:generateContent"
 
 PROMPT = """You write viral, factually accurate scripts for a faceless YouTube {fmt} channel.
 
@@ -60,6 +61,40 @@ def _validate(data: dict) -> dict:
     return data
 
 
+def _version(name: str) -> tuple:
+    m = re.search(r"gemini-(\d+)(?:\.(\d+))?", name)
+    return (int(m.group(1)), int(m.group(2) or 0)) if m else (0, 0)
+
+
+def _candidate_models(key: str, preferred: list[str]) -> list[str]:
+    """Ask Google which models this key can call, so retired model names never break the run.
+
+    Order: Flash-Lite models first (cheapest / most free-tier friendly), newest version first,
+    then regular Flash models. Models from config.json that still exist go first.
+    """
+    try:
+        r = requests.get(f"{BASE}/models", params={"key": key, "pageSize": 200}, timeout=30)
+        r.raise_for_status()
+        available = [
+            m["name"].split("/")[-1]
+            for m in r.json().get("models", [])
+            if "generateContent" in m.get("supportedGenerationMethods", [])
+        ]
+    except Exception as e:  # noqa: BLE001
+        print(f"  (could not list models: {e}; using config.json list)")
+        return preferred
+
+    bad = ("tts", "live", "image", "audio", "embedding", "robotics", "computer", "lyria", "veo", "native", "thinking-exp", "latest")
+    flash = [m for m in available if "flash" in m and not any(b in m for b in bad)]
+    stable = [m for m in flash if "preview" not in m and "exp" not in m]
+    rest = [m for m in flash if m not in stable]
+    ranked = sorted(stable, key=lambda m: ("lite" not in m, tuple(-x for x in _version(m)))) + \
+             sorted(rest, key=lambda m: ("lite" not in m, tuple(-x for x in _version(m))))
+    ordered = [m for m in preferred if m in available] + [m for m in ranked if m not in preferred]
+    print(f"  Gemini models to try: {ordered[:6]}")
+    return ordered or preferred
+
+
 def generate(cfg: dict, history: list[str]) -> dict:
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
@@ -80,20 +115,27 @@ def generate(cfg: dict, history: list[str]) -> dict:
         "generationConfig": {"responseMimeType": "application/json", "temperature": 1.0},
     }
 
-    last_err = None
-    for model in cfg["gemini_models"]:
+    errors = []
+    for model in _candidate_models(key, cfg["gemini_models"])[:6]:
         for attempt in range(3):
             try:
                 r = requests.post(
-                    API.format(model=model), params={"key": key}, json=body, timeout=90
+                    API.format(model=model), params={"key": key}, json=body, timeout=120
                 )
                 if r.status_code == 429:
+                    errors.append(f"{model}: rate limited (429)")
                     time.sleep(20 * (attempt + 1))
                     continue
+                if r.status_code in (400, 401, 403, 404):
+                    # not usable with this key (retired, paid-only, bad key): try the next model
+                    errors.append(f"{model}: HTTP {r.status_code} {r.text[:200]}")
+                    break
                 r.raise_for_status()
                 text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                print(f"  Script written by {model}")
                 return _validate(_extract_json(text))
-            except Exception as e:  # noqa: BLE001 - retry on any parse/network error
-                last_err = e
+            except Exception as e:  # noqa: BLE001 - retry on parse/network error
+                errors.append(f"{model}: {type(e).__name__}: {e}")
                 time.sleep(3)
-    raise RuntimeError(f"Gemini script generation failed: {last_err}")
+    # keys are masked by GitHub, but never print the URL anyway
+    raise RuntimeError("Gemini script generation failed:\n  " + "\n  ".join(errors[-8:]))
