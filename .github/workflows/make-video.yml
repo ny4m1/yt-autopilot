@@ -1,6 +1,8 @@
 name: Make video
 
 on:
+  push:
+    paths: [".run-now"]   # pushing a change to this file starts a test run
   schedule:
     # 5 runs a day (UTC). Tbilisi time = UTC+4: 06:23, 09:41, 13:13, 16:47, 20:29
     - cron: "23 2 * * *"
