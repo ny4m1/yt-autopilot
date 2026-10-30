@@ -36,6 +36,17 @@ YouTube Data API enabled and an OAuth client; the refresh token comes from the O
 API audit, uploads are forced to **private**, so switch them to Public in YouTube Studio.
 Set `youtube_privacy` in `config.json` (`private`, `unlisted` or `public`; public only works after the audit).
 
+## 2c. Run 5 times a day and save the videos on your Mac
+
+The workflow runs 5 times a day and publishes each video as a GitHub Release. To have your Mac download new
+videos automatically into `~/Movies/yt-autopilot`, paste this once into Terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ny4m1/yt-autopilot/main/mac/install.sh | bash
+```
+
+It checks every 30 minutes while your Mac is on, and catches up on anything it missed.
+
 ## 3. Or run it on your computer
 
 ```bash

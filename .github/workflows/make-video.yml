@@ -2,7 +2,12 @@ name: Make video
 
 on:
   schedule:
-    - cron: "17 5 * * *"   # every day at 05:17 UTC (09:17 Tbilisi)
+    # 5 runs a day (UTC). Tbilisi time = UTC+4: 06:23, 09:41, 13:13, 16:47, 20:29
+    - cron: "23 2 * * *"
+    - cron: "41 5 * * *"
+    - cron: "13 9 * * *"
+    - cron: "47 12 * * *"
+    - cron: "29 16 * * *"
   workflow_dispatch:
     inputs:
       count:
@@ -11,6 +16,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: make-video
+  cancel-in-progress: false
 
 jobs:
   make:
@@ -47,9 +56,25 @@ jobs:
           path: output/
           retention-days: 14
 
+      - name: Publish each video as a GitHub Release (your Mac downloads from here)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for dir in output/*/; do
+            name=$(basename "$dir")
+            [ -f "$dir/video.mp4" ] || continue
+            title=$(sed -n '2p' "$dir/upload.txt")
+            mkdir -p "/tmp/rel/$name"
+            cp "$dir/video.mp4" "/tmp/rel/$name/$name.mp4"
+            cp "$dir/upload.txt" "/tmp/rel/$name/$name.txt"
+            [ -f "$dir/thumbnail.jpg" ] && cp "$dir/thumbnail.jpg" "/tmp/rel/$name/$name.jpg"
+            gh release create "v-$name" /tmp/rel/$name/* \
+              --title "$title" --notes-file "$dir/upload.txt" --target "$GITHUB_SHA"
+          done
+
       - name: Remember topics so they are not repeated
         run: |
           git config user.name "yt-autopilot"
           git config user.email "yt-autopilot@users.noreply.github.com"
           git add history.json || true
-          git diff --cached --quiet || (git commit -m "Update topic history" && git push)
+          git diff --cached --quiet || (git commit -m "Update topic history" && git pull --rebase origin main && git push)
